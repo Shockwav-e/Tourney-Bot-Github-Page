@@ -1,0 +1,103 @@
+/* Custom styles for animations and effects */ : root {
+    -- mx : 50 %;
+    --my : 50 %;
+}
+
+/* Hero background with mouse-follow radial gradient and animations */.hero {
+    background : radial - gradient(600 px at var(-- mx)
+        var(-- my), rgba(245, 158, 11, 0.25), transparent 60 %),
+            linear - gradient(135 deg, rgb(248, 250, 252)0 %, rgb(241, 245, 249)50 %, rgb(229, 231, 235)100 %);
+        position : relative;
+        overflow : hidden;
+    }.hero::before {
+        content : '';
+        position : absolute;
+        top : 0;
+        left : 0;
+        right : 0;
+        bottom : 0;
+        background : radial - gradient(circle at 20 % 80 %, rgba(245, 158, 11, 0.1)0 %, transparent 50 %),
+        radial - gradient(circle at 80 % 20 %, rgba(59, 130, 246, 0.1)0 %, transparent 50 %),
+        radial - gradient(circle at 40 % 40 %, rgba(16, 185, 129, 0.1)0 %, transparent 50 %);
+        animation : backgroundShift 20 s ease - in - out infinite;
+    }
+
+    @keyframes backgroundShift {
+        0 %,
+        100 % {
+            transform: translateX(0)translateY(0)scale(1);
+            opacity: 0.5;
+        }
+        25 % {
+            transform: translateX(10 px)translateY(-10 px)scale(1.05);
+            opacity: 0.7;
+        }
+        50 % {
+            transform: translateX(-10 px)translateY(10 px)scale(0.95);
+            opacity: 0.6;
+        }
+        75 % {
+            transform: translateX(5 px)translateY(-5 px)scale(1.02);
+            opacity: 0.8;
+        }
+    }
+
+    /* Reveal animations */.reveal {
+        opacity : 0;
+        transform : translateY(18 px)scale(0.98);
+    }.reveal.show {
+        animation : fadeInUp 0.8 s cubic - bezier(0.22, 1, 0.36, 1)forwards;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity : 0;
+            transform : translateY(18 px)scale(0.98);
+        }
+        to {
+            opacity : 1;
+            transform : translateY(0)scale(1);
+        }
+    }
+
+    /* Custom cursor with trail */.custom - cursor {
+        position : fixed;
+        border - radius : 50 %;
+        pointer - events : none;
+        z - index : 9999;
+        transition : transform 0.1 s ease - out;
+    }.cursor - 0 {
+        width: 20 px;
+        height: 20 px;
+        background: radial - gradient(circle, rgba(245, 158, 11, 0.8)0 %, transparent 70 %);
+    }.cursor - 1 {
+        width: 16 px;
+        height: 16 px;
+        background: radial - gradient(circle, rgba(245, 158, 11, 0.6)0 %, transparent 70 %);
+    }.cursor - 2 {
+        width: 12 px;
+        height: 12 px;
+        background: radial - gradient(circle, rgba(245, 158, 11, 0.4)0 %, transparent 70 %);
+    }.cursor - 3 {
+        width: 8 px;
+        height: 8 px;
+        background: radial - gradient(circle, rgba(245, 158, 11, 0.2)0 %, transparent 70 %);
+    }.cursor - 4 {
+        width: 4 px;
+        height: 4 px;
+        background: radial - gradient(circle, rgba(245, 158, 11, 0.1)0 %, transparent 70 %);
+    }
+
+    body : hover.custom - cursor {
+        transform : scale(1.2);
+    }
+
+    /* Heading shine */
+    @keyframes shine {
+        0 % {
+            background - position: 200 % 0;
+        }
+        100 % {
+            background - position: 0 % 0;
+        }
+    }
