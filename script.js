@@ -72,8 +72,10 @@ function initializeCursor() {
         followerY += (mouseY - followerY) * 0.1;
         
         // Apply transforms
-        cursor.style.transform = `translate(${cursorX}px, ${cursorY}px)`;
-        cursorFollower.style.transform = `translate(${followerX}px, ${followerY}px)`;
+        cursor.style.left = `${cursorX}px`;
+        cursor.style.top = `${cursorY}px`;
+        cursorFollower.style.left = `${followerX}px`;
+        cursorFollower.style.top = `${followerY}px`;
         
         requestAnimationFrame(animateCursor);
     }
@@ -271,7 +273,7 @@ function startMainAnimations() {
 
 // Counter Animation
 function animateCounters() {
-    const counters = document.querySelectorAll('.stat-number');
+    const counters = document.querySelectorAll('.stat-number, .stat-number-large');
     
     counters.forEach(counter => {
         const target = parseInt(counter.getAttribute('data-target'));
@@ -388,16 +390,22 @@ function initializeNavigation() {
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {
             e.preventDefault();
-            const target = document.querySelector(this.getAttribute('href'));
+            const targetId = this.getAttribute('href');
+            const target = document.querySelector(targetId);
             
             if (target) {
-                gsap.to(window, {
-                    duration: 1,
-                    scrollTo: {
-                        y: target,
-                        offsetY: 80
-                    },
-                    ease: 'power2.inOut'
+                // Close mobile menu if open
+                const mobileMenu = document.getElementById('mobile-menu');
+                if (mobileMenu && !mobileMenu.classList.contains('-translate-y-full')) {
+                    mobileMenu.classList.add('-translate-y-full');
+                    mobileMenu.classList.remove('translate-y-0');
+                }
+                
+                // Smooth scroll to target
+                const targetPosition = target.offsetTop - 80; // Account for fixed navbar
+                window.scrollTo({
+                    top: targetPosition,
+                    behavior: 'smooth'
                 });
             }
         });
@@ -418,61 +426,74 @@ function initializeNavigation() {
 function initializeCommands() {
     const commands = {
         "Bot": [
-            { name: "about", description: "Get comprehensive information about Tourney Master, including version, features, and statistics." },
-            { name: "help", description: "Display all available commands with detailed descriptions and usage examples." },
-            { name: "ping", description: "Check the bot's latency, uptime, and connection status with Discord servers." },
-            { name: "invite", description: "Get the bot invitation link with proper permissions for your server." }
+            { name: "about", description: "Get information about the bot including version, server count, and system stats." },
+            { name: "help", description: "Display all available commands with descriptions and usage examples." },
+            { name: "ping", description: "Check the bot's latency and uptime information." }
         ],
         "Tournament": [
-            { name: "create", description: "Create a new tournament with customizable settings, brackets, and participant limits." },
-            { name: "join", description: "Join an active tournament in your server with automatic role assignment." },
-            { name: "leave", description: "Leave a tournament you've joined, with automatic bracket updates." },
-            { name: "bracket", description: "View the current tournament bracket with live match results and upcoming games." },
-            { name: "schedule", description: "Display tournament schedule with match times and participant notifications." },
-            { name: "results", description: "View detailed tournament results, statistics, and winner announcements." },
-            { name: "auto_room", description: "Enable automatic room creation for tournament matches with smart scheduling." },
-            { name: "room_create", description: "Manually create tournament rooms with proper permissions and settings." },
-            { name: "upload_score", description: "Update match scores directly from Discord with validation and logging." }
+            { name: "auto_room", description: "Start or manually trigger the automatic room creation process for tournaments." },
+            { name: "correct_bracket", description: "Correct a match score in a Challonge tournament bracket." },
+            { name: "players_list", description: "Get a list of all players registered in the tournament." },
+            { name: "room_create", description: "Create rooms for open matches in a Challonge tournament." },
+            { name: "show_available_rooms", description: "Show available rooms that can be created for a tournament." },
+            { name: "staff", description: "Manage tournament staff members and their roles." },
+            { name: "stop_auto_room", description: "Stop automatic room creation for tournaments." },
+            { name: "team_info", description: "Get information about a team or player in a tournament." },
+            { name: "toggle_auto_room", description: "Toggle automatic room creation for a tournament on/off." },
+            { name: "tour_info", description: "Get detailed information about the tournament." },
+            { name: "transcript", description: "Generate a transcript of all messages viewable online." },
+            { name: "upload_score", description: "Update a match score from a Challonge tournament." }
+        ],
+        "Attendance": [
+            { name: "add_link", description: "Add a recording link to an existing attendance record." },
+            { name: "attendance", description: "Mark attendance for the match in this channel." },
+            { name: "delete_attendance", description: "Delete a specific attendance record for a match." },
+            { name: "get_attendance", description: "Get attendance records for a user in a specific tournament." },
+            { name: "get_sheet", description: "Generate an Excel file of a tournament's attendance and work counts." },
+            { name: "missing_links", description: "Show matches missing recording links with detailed information." },
+            { name: "staff_work", description: "Get work count for all staff in a specific tournament." },
+            { name: "work_done", description: "Get work count for a user in a specific tournament." }
         ],
         "Moderation": [
-            { name: "purge", description: "Delete multiple messages at once with advanced filtering options and safety checks." },
-            { name: "ban", description: "Ban users from the server with optional reason and duration settings." },
-            { name: "kick", description: "Remove users from the server with logging and notification features." },
-            { name: "mute", description: "Temporarily restrict user's ability to send messages with automatic unmute." },
-            { name: "warn", description: "Issue warnings to users with automatic escalation and tracking system." },
-            { name: "role", description: "Manage user roles with bulk operations and permission validation." },
-            { name: "lock", description: "Lock channels to prevent message sending during tournaments or events." },
-            { name: "unlock", description: "Unlock previously locked channels with proper permission restoration." }
+            { name: "banlist", description: "Generate a list of all banned users in the server." },
+            { name: "categorymonitor", description: "Manage category monitoring for automatic channel management." },
+            { name: "clear_category", description: "Delete all channels in a specified category." },
+            { name: "purge", description: "Delete a specified number of messages from the channel (1-100)." },
+            { name: "purge_all", description: "Delete all messages in the current channel, including those older than 14 days." },
+            { name: "purge_word", description: "Privately delete all messages containing a specific word in the current channel." },
+            { name: "recurringmessage", description: "Manage recurring messages in channels." },
+            { name: "resetnicks", description: "Reset all member nicknames to their usernames." },
+            { name: "server_info", description: "Get detailed information about the server." }
         ],
         "Fun": [
-            { name: "avatar", description: "Display user avatars in high resolution with download links and customization." },
-            { name: "choose", description: "Make random choices from provided options with weighted probability support." },
-            { name: "countdown", description: "Create interactive countdown timers for tournaments and events." },
-            { name: "dice", description: "Roll virtual dice with customizable sides and multiple dice support." },
-            { name: "8ball", description: "Ask the magic 8-ball questions and receive mystical answers." },
-            { name: "quote", description: "Get inspirational quotes from famous personalities and gaming legends." },
-            { name: "meme", description: "Generate random memes from popular gaming and internet culture." },
-            { name: "joke", description: "Share random jokes to lighten the mood in your server." }
+            { name: "avatar", description: "Get the avatar of a user in high resolution." },
+            { name: "choose", description: "Choose randomly from provided options." },
+            { name: "countdown", description: "Start a countdown timer for events." },
+            { name: "enlarge", description: "Enlarge a provided emoji for better visibility." },
+            { name: "localtime", description: "Convert UTC time to your local timezone." },
+            { name: "toss", description: "Toss a coin and get heads or tails." },
+            { name: "translate", description: "Translate text to a specified language." },
+            { name: "user", description: "Get detailed information about a specified user." }
         ],
         "Settings": [
-            { name: "config", description: "Configure bot settings for your server with interactive setup wizard." },
-            { name: "prefix", description: "Change the bot's command prefix with validation and conflict checking." },
-            { name: "language", description: "Set the bot's language for your server from supported localizations." },
-            { name: "timezone", description: "Configure server timezone for accurate tournament scheduling." },
-            { name: "permissions", description: "Manage bot permissions and role-based access control." },
-            { name: "channels", description: "Set up dedicated channels for tournaments, logs, and announcements." },
-            { name: "notifications", description: "Configure notification settings for various bot events and updates." },
-            { name: "backup", description: "Create and restore server configuration backups for disaster recovery." }
+            { name: "settings", description: "Manage bot settings for your server." },
+            { name: "staff_config", description: "Configure or view staff roles and channels." },
+            { name: "tournament", description: "Manage tournament configurations and settings." }
         ],
         "Schedule": [
-            { name: "schedule_create", description: "Create detailed match schedules with participant notifications and reminders." },
-            { name: "schedule_edit", description: "Modify existing schedules with automatic participant notification." },
-            { name: "schedule_delete", description: "Remove schedules with proper cleanup and participant notification." },
-            { name: "schedule_list", description: "View all upcoming and past schedules with filtering options." },
-            { name: "remind", description: "Set up custom reminders for tournaments and important events." },
-            { name: "calendar", description: "Display server calendar with all scheduled tournaments and events." },
-            { name: "availability", description: "Check participant availability for optimal match scheduling." },
-            { name: "reschedule", description: "Reschedule matches with conflict detection and participant approval." }
+            { name: "result_delete", description: "Delete recorded match results and revert to scheduled status." },
+            { name: "schedule_create", description: "Schedule a match in this channel with automatic player notifications." },
+            { name: "schedule_delete", description: "Delete the active schedule for this match." },
+            { name: "schedule_refresh", description: "Refresh schedule buttons and get schedule link." },
+            { name: "schedule_resign", description: "Resign from your assigned staff role for this match." },
+            { name: "schedule_result", description: "Mark the scheduled match as completed and record results." },
+            { name: "schedule_show", description: "View match schedules and results." },
+            { name: "schedule_unassigned", description: "View all pending matches without staff assignments." },
+            { name: "schedule_update", description: "Update existing match schedules." }
+        ],
+        "User": [
+            { name: "profile", description: "Manage your game profile and tournament statistics." },
+            { name: "userinfo", description: "Get public information about yourself or another user." }
         ]
     };
     
