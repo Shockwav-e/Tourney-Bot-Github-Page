@@ -302,6 +302,35 @@ function startMainAnimations() {
 
 // Counter Animation
 function animateCounters() {
+  // Load statistics from config if available
+  if (window.TourneyMasterConfig && window.TourneyMasterConfig.content.stats) {
+    const configStats = window.TourneyMasterConfig.content.stats;
+
+    // Update data-target attributes from config
+    const statElements = document.querySelectorAll(
+      ".stat-number, .stat-number-large"
+    );
+    statElements.forEach((element) => {
+      const parent = element.closest(".stat-item, .stat-card");
+      if (parent) {
+        const statIcon = parent.querySelector(
+          ".stat-icon i, .stat-icon-large i"
+        );
+        if (statIcon) {
+          if (statIcon.classList.contains("fa-server")) {
+            element.setAttribute("data-target", configStats.servers);
+          } else if (statIcon.classList.contains("fa-users")) {
+            element.setAttribute("data-target", configStats.users);
+          } else if (statIcon.classList.contains("fa-trophy")) {
+            element.setAttribute("data-target", configStats.tournaments);
+          } else if (statIcon.classList.contains("fa-clock")) {
+            element.setAttribute("data-target", configStats.uptime);
+          }
+        }
+      }
+    });
+  }
+
   const counters = document.querySelectorAll(
     ".stat-number, .stat-number-large"
   );

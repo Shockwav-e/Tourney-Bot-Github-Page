@@ -56,23 +56,25 @@ window.TourneyMasterConfig = {
 
     // Social Links
     social: {
-      discord: "https://discord.gg/tourneymaster",
-      github: "https://github.com/tourneymaster",
-      twitter: "https://twitter.com/tourneymaster",
-      youtube: "https://youtube.com/tourneymaster",
+      discord: "https://discord.gg/DX46SJBqqX",
+      github: "",
+      twitter: "",
+      youtube: "",
+      botInvite:
+        "https://discord.com/oauth2/authorize?client_id=1408470636195483840&permissions=8&response_type=code&redirect_uri=https%3A%2F%2Fshockwav-e.github.io%2FTourney-Bot-Github-Page%2F&integration_type=0&scope=bot+applications.commands+guilds.join",
     },
 
     // Contact Information
     contact: {
       email: "support@tourneymaster.com",
-      discord: "discord.gg/tourneymaster",
+      discord: "https://discord.gg/DX46SJBqqX",
     },
 
     // Statistics (for counter animation)
     stats: {
       servers: 7,
       users: 5658,
-      tournaments: 100,
+      tournaments: 10,
       uptime: 99,
     },
   },
