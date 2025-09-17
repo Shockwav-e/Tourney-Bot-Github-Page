@@ -840,6 +840,28 @@ body {
     }
 }
 
+@keyframes fade-in-right {
+    from {
+        opacity: 0;
+        transform: translateX(50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes fade-in-left {
+    from {
+        opacity: 0;
+        transform: translateX(-50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
 /* High Performance Animations */
 .gpu-accelerated {
     transform: translateZ(0);
