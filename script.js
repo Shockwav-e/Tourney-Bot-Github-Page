@@ -722,6 +722,55 @@ function initializeCommands() {
         description: "Get public information about yourself or another user.",
       },
     ],
+    Prefix: [
+      {
+        name: "available",
+        description:
+          "Show available rooms that can be created for a tournament.",
+      },
+      {
+        name: "ban",
+        description:
+          "Ban users from the server using user IDs with an optional reason.",
+      },
+      {
+        name: "checkids",
+        description:
+          "Check user IDs and mentions, reporting invalid ones with specific reasons.",
+      },
+      {
+        name: "checkrole",
+        description: "Check which users have a specified role.",
+      },
+      {
+        name: "dot",
+        description:
+          "Adds a red dot (🔴) to the beginning of the channel name.",
+      },
+      {
+        name: "role",
+        description: "Mass add roles to members using user IDs or mentions.",
+      },
+      {
+        name: "roleremove",
+        description:
+          "Remove the mentioned role from specified users or all members who have it in the server.",
+      },
+      {
+        name: "time",
+        description:
+          "Displays the current UTC time and date in 24-hour format.",
+      },
+      {
+        name: "translate",
+        description:
+          "Translate text to a specified language (default: English). Reply to a message or provide text.",
+      },
+      {
+        name: "unban",
+        description: "Unban users from the server using user IDs.",
+      },
+    ],
   };
 
   const commandsContainer = document.getElementById("commands-container");
@@ -758,7 +807,10 @@ function initializeCommands() {
         const commandItem = document.createElement("div");
         commandItem.className = "command-item";
         commandItem.innerHTML = `
-                    <div class="command-name">/${cmd.name}</div>
+                    <div class="command-name">/${cmd.name.replace(
+                      /_/g,
+                      " "
+                    )}</div>
                     <div class="command-description">${cmd.description}</div>
                 `;
 
@@ -1013,6 +1065,107 @@ window.addEventListener("beforeunload", () => {
   // Clean up GSAP animations
   gsap.killTweensOf("*");
   ScrollTrigger.killAll();
+});
+
+// Donation Accordion Functionality
+function initializeDonationAccordion() {
+  const accordionHeaders = document.querySelectorAll(
+    ".donation-accordion-header"
+  );
+
+  function equalizeAccordionHeights() {
+    const allItems = document.querySelectorAll(".donation-accordion-item");
+    let maxHeight = 120; // Start with header height
+
+    // Find the tallest item
+    allItems.forEach((item) => {
+      const content = item.querySelector(".donation-accordion-content");
+      if (content && content.classList.contains("open")) {
+        const contentHeight = content.scrollHeight;
+        const totalHeight = 120 + contentHeight + 48; // header + content + padding
+        maxHeight = Math.max(maxHeight, totalHeight);
+      }
+    });
+
+    // Apply the max height to all items, but reset closed ones to header height
+    allItems.forEach((item) => {
+      const content = item.querySelector(".donation-accordion-content");
+      if (content && content.classList.contains("open")) {
+        item.style.height = maxHeight + "px";
+      } else {
+        item.style.height = "120px"; // Just header height for closed ones
+      }
+    });
+  }
+
+  accordionHeaders.forEach((header) => {
+    header.addEventListener("click", () => {
+      const targetId = header.getAttribute("data-target") + "-content";
+      const content = document.getElementById(targetId);
+
+      // Close all other accordions
+      document
+        .querySelectorAll(".donation-accordion-content")
+        .forEach((item) => {
+          if (item.id !== targetId) {
+            item.classList.remove("open");
+            item.previousElementSibling.classList.remove("active");
+            item.style.height = "0px";
+            item.style.padding = "0px";
+          }
+        });
+
+      // Toggle current accordion
+      if (content.classList.contains("open")) {
+        // Closing
+        content.classList.remove("open");
+        header.classList.remove("active");
+        content.style.height = "0px";
+        setTimeout(() => {
+          content.style.padding = "0px";
+        }, 200);
+      } else {
+        // Opening
+        content.classList.add("open");
+        header.classList.add("active");
+        content.style.padding = "1.5rem";
+
+        // Calculate actual content height
+        const contentHeight = content.scrollHeight;
+        content.style.height = contentHeight + "px";
+
+        // Smooth scroll to show content if opening (only on mobile)
+        if (window.innerWidth < 768) {
+          setTimeout(() => {
+            content.scrollIntoView({
+              behavior: "smooth",
+              block: "nearest",
+            });
+          }, 100);
+        }
+      }
+
+      // Equalize heights after animation
+      setTimeout(equalizeAccordionHeights, 400);
+    });
+  });
+
+  // Initial equalization
+  setTimeout(equalizeAccordionHeights, 100);
+}
+
+// Initialize everything when DOM is loaded
+document.addEventListener("DOMContentLoaded", () => {
+  initializeLoading();
+  initializeCursor();
+  initializeTheme();
+  initializeParticles();
+  initializeAnimations();
+  initializeNavigation();
+  initializeCommands();
+  initializeScrollEffects();
+  initializeInteractions();
+  initializeDonationAccordion(); // Add this line
 });
 
 // Export for debugging

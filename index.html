@@ -256,6 +256,7 @@
             <a href="#features" class="nav-link">Features</a>
             <a href="#commands" class="nav-link">Commands</a>
             <a href="#about" class="nav-link">About</a>
+            <a href="#donation" class="nav-link">Donate</a>
             <a href="#contact" class="nav-link">Contact</a>
           </div>
 
@@ -318,6 +319,11 @@
             href="#about"
             class="block py-2 text-lg font-medium hover:text-yellow-500 transition-colors duration-300"
             >About</a
+          >
+          <a
+            href="#donation"
+            class="block py-2 text-lg font-medium hover:text-yellow-500 transition-colors duration-300"
+            >Donate</a
           >
           <a
             href="#contact"
@@ -583,6 +589,9 @@
               Schedule
             </button>
             <button class="category-filter" data-category="User">User</button>
+            <button class="category-filter" data-category="Prefix">
+              Prefix
+            </button>
           </div>
         </div>
 
@@ -920,6 +929,229 @@
                 Free to use • No setup required • Instant activation
               </p>
             </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Donation Section -->
+    <section
+      id="donation"
+      class="py-20 bg-gradient-to-br from-yellow-400 via-orange-500 to-red-500 text-white relative overflow-hidden"
+    >
+      <div class="absolute inset-0 bg-black/20"></div>
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div class="text-center mb-16">
+          <h2
+            class="section-title text-5xl md:text-6xl font-black mb-6 text-white"
+          >
+            Support Tourney Master
+          </h2>
+          <p
+            class="section-subtitle text-xl text-yellow-100 max-w-4xl mx-auto mb-4"
+          >
+            Tourney Master is completely FREE for everyone to use! Your
+            donations help us maintain better servers, add new features, and
+            keep improving the bot for the gaming community.
+          </p>
+          <p class="text-lg text-yellow-200 max-w-3xl mx-auto">
+            💝 Every contribution, no matter the size, helps us provide a better
+            experience for all users
+          </p>
+        </div>
+
+        <div class="donation-accordion space-y-4">
+          <!-- Bitcoin -->
+          <div class="donation-accordion-item">
+            <button class="donation-accordion-header" data-target="btc">
+              <div class="donation-icon">
+                <i class="fab fa-bitcoin"></i>
+              </div>
+              <div class="flex-1 text-left">
+                <h3 class="text-xl font-bold">Bitcoin (BTC)</h3>
+                <p class="text-yellow-100 text-sm">
+                  Support us with Bitcoin donations
+                </p>
+              </div>
+              <div class="accordion-arrow">
+                <i class="fas fa-chevron-down"></i>
+              </div>
+            </button>
+            <div class="donation-accordion-content" id="btc-content">
+              <div class="donation-details">
+                <p class="text-sm text-yellow-200 mb-2">Wallet Address:</p>
+                <code
+                  class="bg-black/30 px-3 py-2 rounded-lg text-yellow-300 font-mono text-sm break-all block mb-4"
+                >
+                  bc1q56k58k95a4qa8kew8d946e7u4k3ptnazwm2zjm
+                </code>
+                <div class="qr-placeholder">
+                  <img
+                    src="qr/btc.png"
+                    alt="BTC QR Code"
+                    class="w-32 h-32 rounded-lg mx-auto"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ethereum -->
+          <div class="donation-accordion-item">
+            <button class="donation-accordion-header" data-target="eth">
+              <div class="donation-icon">
+                <i class="fab fa-ethereum"></i>
+              </div>
+              <div class="flex-1 text-left">
+                <h3 class="text-xl font-bold">Ethereum (ETH)</h3>
+                <p class="text-yellow-100 text-sm">
+                  Support us with ETH donations
+                </p>
+              </div>
+              <div class="accordion-arrow">
+                <i class="fas fa-chevron-down"></i>
+              </div>
+            </button>
+            <div class="donation-accordion-content" id="eth-content">
+              <div class="donation-details">
+                <p class="text-sm text-yellow-200 mb-2">Wallet Address:</p>
+                <code
+                  class="bg-black/30 px-3 py-2 rounded-lg text-yellow-300 font-mono text-sm break-all block mb-4"
+                >
+                  0x6FbaABDaD971A0750695a8f87089815D5D953443
+                </code>
+                <div class="qr-placeholder">
+                  <img
+                    src="qr/eth.png"
+                    alt="ETH QR Code"
+                    class="w-32 h-32 rounded-lg mx-auto"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Litecoin -->
+          <div class="donation-accordion-item">
+            <button class="donation-accordion-header" data-target="ltc">
+              <div class="donation-icon">
+                <i class="fas fa-coins"></i>
+              </div>
+              <div class="flex-1 text-left">
+                <h3 class="text-xl font-bold">Litecoin (LTC)</h3>
+                <p class="text-yellow-100 text-sm">
+                  Support us with Litecoin donations
+                </p>
+              </div>
+              <div class="accordion-arrow">
+                <i class="fas fa-chevron-down"></i>
+              </div>
+            </button>
+            <div class="donation-accordion-content" id="ltc-content">
+              <div class="donation-details">
+                <p class="text-sm text-yellow-200 mb-2">Wallet Address:</p>
+                <code
+                  class="bg-black/30 px-3 py-2 rounded-lg text-yellow-300 font-mono text-sm break-all block mb-4"
+                >
+                  ltc1qdhf3ajjq4j5hdfyaq0gsgvdadlrq2qdsaee6wd
+                </code>
+                <div class="qr-placeholder">
+                  <img
+                    src="qr/ltc.png"
+                    alt="LTC QR Code"
+                    class="w-32 h-32 rounded-lg mx-auto"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Solana -->
+          <div class="donation-accordion-item">
+            <button class="donation-accordion-header" data-target="sol">
+              <div class="donation-icon">
+                <i class="fas fa-solar-panel"></i>
+              </div>
+              <div class="flex-1 text-left">
+                <h3 class="text-xl font-bold">Solana (SOL)</h3>
+                <p class="text-yellow-100 text-sm">
+                  Support us with Solana donations
+                </p>
+              </div>
+              <div class="accordion-arrow">
+                <i class="fas fa-chevron-down"></i>
+              </div>
+            </button>
+            <div class="donation-accordion-content" id="sol-content">
+              <div class="donation-details">
+                <p class="text-sm text-yellow-200 mb-2">Wallet Address:</p>
+                <code
+                  class="bg-black/30 px-3 py-2 rounded-lg text-yellow-300 font-mono text-sm break-all block mb-4"
+                >
+                  3ukk5qsXaCnrHNCjuZia6xhEg5r5VjB9cDrkCmh1oueQ
+                </code>
+                <div class="qr-placeholder">
+                  <img
+                    src="qr/sol.png"
+                    alt="SOL QR Code"
+                    class="w-32 h-32 rounded-lg mx-auto"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- UPI -->
+          <div class="donation-accordion-item">
+            <button class="donation-accordion-header" data-target="upi">
+              <div class="donation-icon">
+                <i class="fas fa-mobile-alt"></i>
+              </div>
+              <div class="flex-1 text-left">
+                <h3 class="text-xl font-bold">UPI Payment</h3>
+                <p class="text-yellow-100 text-sm">
+                  Fast, secure payments for Indian users
+                </p>
+              </div>
+              <div class="accordion-arrow">
+                <i class="fas fa-chevron-down"></i>
+              </div>
+            </button>
+            <div class="donation-accordion-content" id="upi-content">
+              <div class="donation-details">
+                <p class="text-sm text-yellow-200 mb-2">UPI ID:</p>
+                <code
+                  class="bg-black/30 px-3 py-2 rounded-lg text-yellow-300 font-mono text-sm break-all block mb-4"
+                >
+                  shockwave999@apl
+                </code>
+                <div class="qr-placeholder">
+                  <div
+                    class="w-32 h-32 bg-white/20 rounded-lg flex items-center justify-center mx-auto"
+                  >
+                    <span class="text-yellow-300 text-sm">Coming Soon</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="donation-thanks text-center mt-16">
+          <div class="thanks-box">
+            <h3 class="text-3xl font-bold mb-4">Thank You!</h3>
+            <p class="text-xl text-yellow-100">
+              Every donation, no matter the size, helps us continue developing
+              Tourney Master. Join our community and be part of something
+              amazing!
+            </p>
+            <a
+              href="https://discord.gg/DX46SJBqqX"
+              class="inline-block mt-6 bg-white text-orange-500 px-8 py-3 rounded-full font-semibold hover:bg-yellow-50 transition-colors duration-300"
+            >
+              <i class="fab fa-discord mr-2"></i>
+              Join Our Discord
+            </a>
           </div>
         </div>
       </div>
