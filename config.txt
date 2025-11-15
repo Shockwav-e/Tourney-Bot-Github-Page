@@ -32,4 +32,4 @@ ipv6 all: ipv6
 # Hotkey Settings
 # Format: key_name (F9, F10, F11, F12, MOUSE4, MOUSE5)
 # Press same key to toggle start/stop
-hotkey_toggle: MOUSE4
+hotkey_toggle: MOUSE5

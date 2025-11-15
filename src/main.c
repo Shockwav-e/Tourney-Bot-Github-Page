@@ -46,6 +46,8 @@ static int hotkeyToggle = VK_XBUTTON1;
 static BOOL hotkeyPressed = FALSE;
 static Ihandle *hotkeyLabel;
 static char hotkeyDisplayName[32] = "MOUSE4";
+static HHOOK mouseHook = NULL;
+static LRESULT CALLBACK MouseHookProc(int nCode, WPARAM wParam, LPARAM lParam);
 
 
 void showStatus(const char *line);
@@ -200,26 +202,73 @@ static void parseHotkey(const char *hotkeyStr) {
 static void registerHotkey(HWND hWnd) {
     if (hotkeyVKey == 0) return;
 
-    hotkeyId = 1;
-    if (RegisterHotKey(hWnd, hotkeyId, hotkeyModifiers, hotkeyVKey)) {
-        LOG("Hotkey registered successfully");
-        hotkeyRegistered = TRUE;
+    // For mouse buttons, use a mouse hook instead of RegisterHotKey
+    if (hotkeyToggle == VK_XBUTTON1 || hotkeyToggle == VK_XBUTTON2) {
+        mouseHook = SetWindowsHookEx(WH_MOUSE_LL, MouseHookProc, GetModuleHandle(NULL), 0);
+        if (mouseHook) {
+            LOG("Mouse hook registered successfully");
+            hotkeyRegistered = TRUE;
+        } else {
+            LOG("Failed to register mouse hook");
+            hotkeyRegistered = FALSE;
+        }
     } else {
-        LOG("Failed to register hotkey");
-        hotkeyRegistered = FALSE;
+        // For function keys, use RegisterHotKey
+        hotkeyId = 1;
+        if (RegisterHotKey(hWnd, hotkeyId, hotkeyModifiers, hotkeyVKey)) {
+            LOG("Hotkey registered successfully");
+            hotkeyRegistered = TRUE;
+        } else {
+            LOG("Failed to register hotkey");
+            hotkeyRegistered = FALSE;
+        }
     }
 }
 
 // Unregister global hotkey
 static void unregisterHotkey() {
-    if (hotkeyRegistered && hotkeyId != 0) {
-        HWND hWnd = (HWND)IupGetAttribute(dialog, "HWND");
-        if (hWnd) {
-            UnregisterHotKey(hWnd, hotkeyId);
-            hotkeyRegistered = FALSE;
-            LOG("Hotkey unregistered");
+    if (hotkeyRegistered) {
+        if (mouseHook) {
+            UnhookWindowsHookEx(mouseHook);
+            mouseHook = NULL;
+            LOG("Mouse hook unregistered");
+        } else if (hotkeyId != 0) {
+            HWND hWnd = (HWND)IupGetAttribute(dialog, "HWND");
+            if (hWnd) {
+                UnregisterHotKey(hWnd, hotkeyId);
+                LOG("Hotkey unregistered");
+            }
+        }
+        hotkeyRegistered = FALSE;
+    }
+}
+
+// Mouse hook for detecting mouse button presses
+static LRESULT CALLBACK MouseHookProc(int nCode, WPARAM wParam, LPARAM lParam) {
+    if (nCode >= 0) {
+        // Check for mouse button 4 or 5
+        if ((wParam == WM_XBUTTONDOWN) && lParam) {
+            PMSLLHOOKSTRUCT pMouseStruct = (PMSLLHOOKSTRUCT)lParam;
+            UINT button = GET_XBUTTON_WPARAM(pMouseStruct->mouseData);
+            
+            if ((hotkeyToggle == VK_XBUTTON1 && button == XBUTTON1) ||
+                (hotkeyToggle == VK_XBUTTON2 && button == XBUTTON2)) {
+                
+                if (!hotkeyPressed) {
+                    hotkeyPressed = TRUE;
+                    const char* title = IupGetAttribute(filterButton, "TITLE");
+                    if (strcmp(title, "Start") == 0) {
+                        uiStartCb(filterButton);
+                    } else if (strcmp(title, "Stop") == 0) {
+                        uiStopCb(filterButton);
+                    }
+                }
+            }
+        } else if (wParam == WM_XBUTTONUP) {
+            hotkeyPressed = FALSE;
         }
     }
+    return CallNextHookEx(mouseHook, nCode, wParam, lParam);
 }
 
 // Toggle start/stop via hotkey
@@ -582,19 +631,21 @@ static int uiTimerCb(Ihandle *ih) {
     int ix;
     UNREFERENCED_PARAMETER(ih);
     
-    // Check toggle hotkey
-    if (GetAsyncKeyState(hotkeyToggle) & 0x8000) {
-        if (!hotkeyPressed) {
-            hotkeyPressed = TRUE;
-            const char* title = IupGetAttribute(filterButton, "TITLE");
-            if (strcmp(title, "Start") == 0) {
-                uiStartCb(filterButton);
-            } else {
-                uiStopCb(filterButton);
+    // Check toggle hotkey for function keys only (mouse buttons use hook)
+    if (hotkeyToggle != VK_XBUTTON1 && hotkeyToggle != VK_XBUTTON2) {
+        if (GetAsyncKeyState(hotkeyToggle) & 0x8000) {
+            if (!hotkeyPressed) {
+                hotkeyPressed = TRUE;
+                const char* title = IupGetAttribute(filterButton, "TITLE");
+                if (strcmp(title, "Start") == 0) {
+                    uiStartCb(filterButton);
+                } else if (strcmp(title, "Stop") == 0) {
+                    uiStopCb(filterButton);
+                }
             }
+        } else {
+            hotkeyPressed = FALSE;
         }
-    } else {
-        hotkeyPressed = FALSE;
     }
     
     for (ix = 0; ix < MODULE_CNT; ++ix) {
