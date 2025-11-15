@@ -6,12 +6,14 @@
 #include <Windows.h>
 #include <iphlpapi.h>
 #include <icmpapi.h>
+#include <mmsystem.h>
 #include "iup.h"
 #include "common.h"
 
 #pragma comment(lib, "iphlpapi.lib")
 #pragma comment(lib, "ws2_32.lib")
 #pragma comment(lib, "user32.lib")
+#pragma comment(lib, "winmm.lib")
 
 // ! the order decides which module get processed first
 Module* modules[MODULE_CNT] = {
@@ -36,7 +38,8 @@ Ihandle *filterSelectList;
 static Ihandle *stateIcon;
 static Ihandle *timer;
 static Ihandle *timeout = NULL;
-static Ihandle *pingLabel;
+static Ihandle *googlePingLabel;
+static Ihandle *cloudflarePingLabel;
 static BOOL pingEnabled = FALSE;
 static int hotkeyId = 0;
 static UINT hotkeyModifiers = 0;
@@ -312,11 +315,15 @@ void init(int argc, char* argv[]) {
             controlHbox = IupHbox(
                 stateIcon = IupLabel(NULL),
                 filterButton = IupButton("Start", NULL),
+                IupVbox(
+                    googlePingLabel = IupLabel("Google: --ms"),
+                    cloudflarePingLabel = IupLabel("Cloudflare: --ms"),
+                    NULL
+                ),
                 IupFill(),
-                pingLabel = IupLabel("Ping: --ms"),
-                IupLabel("Hotkey:  "),
+                IupLabel("Hotkey: "),
                 hotkeyLabel = IupLabel("MOUSE4"),
-                IupLabel("Presets:  "),
+                IupLabel("  Presets: "),
                 filterSelectList = IupList(NULL),
                 NULL
             ),
@@ -366,9 +373,11 @@ void init(int argc, char* argv[]) {
     // set filter text value since the callback won't take effect before main loop starts
     IupSetAttribute(filterText, "VALUE", filters[0].filterValue);
     
-    // setup ping label styling
-    IupSetAttribute(pingLabel, "FGCOLOR", "100 200 100");
-    IupSetAttribute(pingLabel, "PADDING", "4x");
+    // setup ping labels styling
+    IupSetAttribute(googlePingLabel, "FGCOLOR", "100 200 100");
+    IupSetAttribute(googlePingLabel, "PADDING", "2x");
+    IupSetAttribute(cloudflarePingLabel, "FGCOLOR", "100 200 100");
+    IupSetAttribute(cloudflarePingLabel, "PADDING", "2x");
     
     // setup hotkey label styling
     IupSetAttribute(hotkeyLabel, "FGCOLOR", "100 150 255");
@@ -574,7 +583,7 @@ static int uiStartCb(Ihandle *ih) {
     IupSetCallback(filterButton, "ACTION", uiStopCb);
     IupSetAttribute(timer, "RUN", "YES");
     pingEnabled = TRUE;
-    Beep(800, 100);
+    PlaySound(TEXT("discord_ping.wav"), NULL, SND_FILENAME | SND_ASYNC);
 
     return IUP_DEFAULT;
 }
@@ -605,8 +614,9 @@ static int uiStopCb(Ihandle *ih) {
     sendState = SEND_STATUS_NONE;
     IupSetAttribute(stateIcon, "IMAGE", "none_icon");
     pingEnabled = FALSE;
-    IupStoreAttribute(pingLabel, "TITLE", "Ping: --ms");
-    Beep(400, 150);
+    IupStoreAttribute(googlePingLabel, "TITLE", "Google: --ms");
+    IupStoreAttribute(cloudflarePingLabel, "TITLE", "Cloudflare: --ms");
+    PlaySound(TEXT("discord_ping.wav"), NULL, SND_FILENAME | SND_ASYNC);
 
     showStatus("Stopped. To begin again, edit criteria and click Start.");
     return IUP_DEFAULT;
@@ -732,14 +742,14 @@ static void uiSetupModule(Module *module, Ihandle *parent) {
     }
 }
 
-// Ping implementation
+// Ping implementation - pings both Google and Cloudflare DNS
 static void updatePing() {
     static DWORD lastPingTime = 0;
     DWORD currentTime = GetTickCount();
     
     if (!pingEnabled) return;
     
-    if (currentTime - lastPingTime >= 2000) {
+    if (currentTime - lastPingTime >= 500) {
         HANDLE hIcmpFile = IcmpCreateFile();
         if (hIcmpFile != INVALID_HANDLE_VALUE) {
             char SendData[32] = "mucchad";
@@ -747,41 +757,59 @@ static void updatePing() {
             LPVOID ReplyBuffer = malloc(ReplySize);
             
             if (ReplyBuffer) {
-                IPAddr ipaddr = inet_addr("8.8.8.8");
-                if (ipaddr != INADDR_NONE) {
-                    // Set IP options for better accuracy
-                    IP_OPTION_INFORMATION IpOptions;
-                    IpOptions.Ttl = 64;
-                    IpOptions.Tos = 0;
-                    IpOptions.Flags = 0;
-                    IpOptions.OptionsSize = 0;
-                    IpOptions.OptionsData = NULL;
-                    
-                    DWORD dwRetVal = IcmpSendEcho(hIcmpFile, ipaddr, 
-                        SendData, sizeof(SendData), &IpOptions, ReplyBuffer, ReplySize, 3000);
-                    
-                    if (dwRetVal != 0) {
-                        PICMP_ECHO_REPLY pEchoReply = (PICMP_ECHO_REPLY)ReplyBuffer;
-                        if (pEchoReply->Status == IP_SUCCESS) {
-                            char pingText[32];
-                            ULONG rtt = pEchoReply->RoundTripTime;
-                            if (rtt == 0) rtt = 1; // Show at least 1ms
-                            sprintf(pingText, "Ping: %lums", rtt);
-                            IupStoreAttribute(pingLabel, "TITLE", pingText);
-                        } else {
-                            IupStoreAttribute(pingLabel, "TITLE", "Ping: --ms");
-                        }
+                IP_OPTION_INFORMATION IpOptions;
+                IpOptions.Ttl = 64;
+                IpOptions.Tos = 0;
+                IpOptions.Flags = 0;
+                IpOptions.OptionsSize = 0;
+                IpOptions.OptionsData = NULL;
+                
+                // Ping Google DNS (8.8.8.8)
+                IPAddr googleIP = inet_addr("8.8.8.8");
+                DWORD dwRetVal = IcmpSendEcho(hIcmpFile, googleIP, 
+                    SendData, sizeof(SendData), &IpOptions, ReplyBuffer, ReplySize, 1000);
+                
+                if (dwRetVal != 0) {
+                    PICMP_ECHO_REPLY pEchoReply = (PICMP_ECHO_REPLY)ReplyBuffer;
+                    if (pEchoReply->Status == IP_SUCCESS) {
+                        char pingText[32];
+                        ULONG rtt = pEchoReply->RoundTripTime;
+                        if (rtt == 0) rtt = 1;
+                        sprintf(pingText, "Google: %lums", rtt);
+                        IupStoreAttribute(googlePingLabel, "TITLE", pingText);
                     } else {
-                        IupStoreAttribute(pingLabel, "TITLE", "Ping: --ms");
+                        IupStoreAttribute(googlePingLabel, "TITLE", "Google: --ms");
                     }
                 } else {
-                    IupStoreAttribute(pingLabel, "TITLE", "Ping: --ms");
+                    IupStoreAttribute(googlePingLabel, "TITLE", "Google: --ms");
                 }
+                
+                // Ping Cloudflare DNS (1.1.1.1)
+                IPAddr cloudflareIP = inet_addr("1.1.1.1");
+                dwRetVal = IcmpSendEcho(hIcmpFile, cloudflareIP, 
+                    SendData, sizeof(SendData), &IpOptions, ReplyBuffer, ReplySize, 1000);
+                
+                if (dwRetVal != 0) {
+                    PICMP_ECHO_REPLY pEchoReply = (PICMP_ECHO_REPLY)ReplyBuffer;
+                    if (pEchoReply->Status == IP_SUCCESS) {
+                        char pingText[32];
+                        ULONG rtt = pEchoReply->RoundTripTime;
+                        if (rtt == 0) rtt = 1;
+                        sprintf(pingText, "Cloudflare: %lums", rtt);
+                        IupStoreAttribute(cloudflarePingLabel, "TITLE", pingText);
+                    } else {
+                        IupStoreAttribute(cloudflarePingLabel, "TITLE", "Cloudflare: --ms");
+                    }
+                } else {
+                    IupStoreAttribute(cloudflarePingLabel, "TITLE", "Cloudflare: --ms");
+                }
+                
                 free(ReplyBuffer);
             }
             IcmpCloseHandle(hIcmpFile);
         } else {
-            IupStoreAttribute(pingLabel, "TITLE", "Ping: --ms");
+            IupStoreAttribute(googlePingLabel, "TITLE", "Google: --ms");
+            IupStoreAttribute(cloudflarePingLabel, "TITLE", "Cloudflare: --ms");
         }
         lastPingTime = currentTime;
     }
