@@ -28,3 +28,8 @@ ipv6 all: ipv6
 
 # you can add your usual filters here for your own use:
 #http requests ONLY(data transmit on other ports): outbound and tcp.DstPort == 80
+
+# Hotkey Settings
+# Format: key_name (F9, F10, F11, F12, MOUSE4, MOUSE5)
+# Press same key to toggle start/stop
+hotkey_toggle: MOUSE4

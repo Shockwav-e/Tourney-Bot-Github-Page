@@ -11,6 +11,7 @@
 
 #pragma comment(lib, "iphlpapi.lib")
 #pragma comment(lib, "ws2_32.lib")
+#pragma comment(lib, "user32.lib")
 
 // ! the order decides which module get processed first
 Module* modules[MODULE_CNT] = {
@@ -37,6 +38,14 @@ static Ihandle *timer;
 static Ihandle *timeout = NULL;
 static Ihandle *pingLabel;
 static BOOL pingEnabled = FALSE;
+static int hotkeyId = 0;
+static UINT hotkeyModifiers = 0;
+static UINT hotkeyVKey = 0;
+static BOOL hotkeyRegistered = FALSE;
+static int hotkeyToggle = VK_XBUTTON1;
+static BOOL hotkeyPressed = FALSE;
+static Ihandle *hotkeyLabel;
+static char hotkeyDisplayName[32] = "MOUSE4";
 
 
 void showStatus(const char *line);
@@ -49,6 +58,10 @@ static int uiListSelectCb(Ihandle *ih, char *text, int item, int state);
 static int uiFilterTextCb(Ihandle *ih);
 static void uiSetupModule(Module *module, Ihandle *parent);
 static void updatePing();
+static void parseHotkey(const char *hotkeyStr);
+static void registerHotkey(HWND hWnd);
+static void unregisterHotkey();
+static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 
 // serializing config files using a stupid custom format
@@ -118,6 +131,23 @@ EAT_SPACE:  while (isspace(*current)) { ++current; }
             ++filtersSize;
         } while (last && last - configBuf < CONFIG_BUF_SIZE);
         LOG("Loaded %u records.", filtersSize);
+        
+        // Load hotkey settings
+        for (UINT i = 0; i < filtersSize; ++i) {
+            if (strcmp(filters[i].filterName, "hotkey_toggle") == 0) {
+                char trimmed[32];
+                sscanf(filters[i].filterValue, "%31s", trimmed);
+                strcpy(hotkeyDisplayName, trimmed);
+                
+                if (strcmp(trimmed, "F9") == 0) hotkeyToggle = VK_F9;
+                else if (strcmp(trimmed, "F10") == 0) hotkeyToggle = VK_F10;
+                else if (strcmp(trimmed, "F11") == 0) hotkeyToggle = VK_F11;
+                else if (strcmp(trimmed, "F12") == 0) hotkeyToggle = VK_F12;
+                else if (strcmp(trimmed, "MOUSE4") == 0) hotkeyToggle = VK_XBUTTON1;
+                else if (strcmp(trimmed, "MOUSE5") == 0) hotkeyToggle = VK_XBUTTON2;
+            }
+        }
+        
         fclose(f);
     }
 
@@ -128,6 +158,80 @@ EAT_SPACE:  while (isspace(*current)) { ++current; }
         filters[filtersSize].filterName = "loopback packets";
         filters[filtersSize].filterValue = "outbound and ip.DstAddr >= 127.0.0.1 and ip.DstAddr <= 127.255.255.255";
         filtersSize = 1;
+    }
+}
+
+// Parse hotkey string from config (e.g., "F9", "MOUSE4", "MOUSE5")
+static void parseHotkey(const char *hotkeyStr) {
+    if (!hotkeyStr || strlen(hotkeyStr) == 0) {
+        LOG("No hotkey configured");
+        return;
+    }
+
+    // Trim whitespace
+    char trimmed[64];
+    sscanf(hotkeyStr, "%63s", trimmed);
+
+    hotkeyModifiers = 0;
+
+    if (strcmp(trimmed, "F9") == 0) {
+        hotkeyVKey = VK_F9;
+    } else if (strcmp(trimmed, "F10") == 0) {
+        hotkeyVKey = VK_F10;
+    } else if (strcmp(trimmed, "F11") == 0) {
+        hotkeyVKey = VK_F11;
+    } else if (strcmp(trimmed, "F12") == 0) {
+        hotkeyVKey = VK_F12;
+    } else if (strcmp(trimmed, "MOUSE4") == 0) {
+        hotkeyVKey = VK_XBUTTON1;
+    } else if (strcmp(trimmed, "MOUSE5") == 0) {
+        hotkeyVKey = VK_XBUTTON2;
+    } else {
+        LOG("Unknown hotkey: %s", trimmed);
+        hotkeyVKey = 0;
+    }
+
+    if (hotkeyVKey != 0) {
+        LOG("Hotkey configured: %s (VKey: %d)", trimmed, hotkeyVKey);
+    }
+}
+
+// Register global hotkey
+static void registerHotkey(HWND hWnd) {
+    if (hotkeyVKey == 0) return;
+
+    hotkeyId = 1;
+    if (RegisterHotKey(hWnd, hotkeyId, hotkeyModifiers, hotkeyVKey)) {
+        LOG("Hotkey registered successfully");
+        hotkeyRegistered = TRUE;
+    } else {
+        LOG("Failed to register hotkey");
+        hotkeyRegistered = FALSE;
+    }
+}
+
+// Unregister global hotkey
+static void unregisterHotkey() {
+    if (hotkeyRegistered && hotkeyId != 0) {
+        HWND hWnd = (HWND)IupGetAttribute(dialog, "HWND");
+        if (hWnd) {
+            UnregisterHotKey(hWnd, hotkeyId);
+            hotkeyRegistered = FALSE;
+            LOG("Hotkey unregistered");
+        }
+    }
+}
+
+// Toggle start/stop via hotkey
+static void toggleFiltering() {
+    if (IupGetInt(filterButton, "ACTIVE") == 0) return; // button disabled
+
+    // Check current state by button title
+    const char *buttonTitle = IupGetAttribute(filterButton, "TITLE");
+    if (strcmp(buttonTitle, "Start") == 0) {
+        uiStartCb(filterButton);
+    } else if (strcmp(buttonTitle, "Stop") == 0) {
+        uiStopCb(filterButton);
     }
 }
 
@@ -161,6 +265,8 @@ void init(int argc, char* argv[]) {
                 filterButton = IupButton("Start", NULL),
                 IupFill(),
                 pingLabel = IupLabel("Ping: --ms"),
+                IupLabel("Hotkey:  "),
+                hotkeyLabel = IupLabel("MOUSE4"),
                 IupLabel("Presets:  "),
                 filterSelectList = IupList(NULL),
                 NULL
@@ -214,6 +320,11 @@ void init(int argc, char* argv[]) {
     // setup ping label styling
     IupSetAttribute(pingLabel, "FGCOLOR", "100 200 100");
     IupSetAttribute(pingLabel, "PADDING", "4x");
+    
+    // setup hotkey label styling
+    IupSetAttribute(hotkeyLabel, "FGCOLOR", "100 150 255");
+    IupSetAttribute(hotkeyLabel, "PADDING", "4x");
+    IupStoreAttribute(hotkeyLabel, "TITLE", hotkeyDisplayName);
 
     // functionalities frame 
     bottomFrame = IupFrame(
@@ -284,6 +395,14 @@ void init(int argc, char* argv[]) {
         IupSetCallback(timeout, "ACTION_CB", uiTimeoutCb);
         IupSetAttribute(timeout, "RUN", "YES");
     }
+
+    // Parse hotkey from config
+    for (ix = 0; ix < filtersSize; ++ix) {
+        if (strstr(filters[ix].filterName, "hotkey_toggle") != NULL) {
+            parseHotkey(filters[ix].filterValue);
+            break;
+        }
+    }
 }
 
 void startup() {
@@ -297,6 +416,7 @@ void startup() {
 }
 
 void cleanup() {
+    unregisterHotkey();
 
     IupDestroy(timer);
     if (timeout) {
@@ -381,6 +501,9 @@ static int uiOnDialogShow(Ihandle *ih, int state) {
         uiStartCb(filterButton);
     }
 
+    // Register hotkey after dialog is shown
+    registerHotkey(hWnd);
+
     return exit ? IUP_CLOSE : IUP_DEFAULT;
 }
 
@@ -402,6 +525,7 @@ static int uiStartCb(Ihandle *ih) {
     IupSetCallback(filterButton, "ACTION", uiStopCb);
     IupSetAttribute(timer, "RUN", "YES");
     pingEnabled = TRUE;
+    Beep(800, 100);
 
     return IUP_DEFAULT;
 }
@@ -433,6 +557,7 @@ static int uiStopCb(Ihandle *ih) {
     IupSetAttribute(stateIcon, "IMAGE", "none_icon");
     pingEnabled = FALSE;
     IupStoreAttribute(pingLabel, "TITLE", "Ping: --ms");
+    Beep(400, 150);
 
     showStatus("Stopped. To begin again, edit criteria and click Start.");
     return IUP_DEFAULT;
@@ -456,6 +581,22 @@ static int uiToggleControls(Ihandle *ih, int state) {
 static int uiTimerCb(Ihandle *ih) {
     int ix;
     UNREFERENCED_PARAMETER(ih);
+    
+    // Check toggle hotkey
+    if (GetAsyncKeyState(hotkeyToggle) & 0x8000) {
+        if (!hotkeyPressed) {
+            hotkeyPressed = TRUE;
+            const char* title = IupGetAttribute(filterButton, "TITLE");
+            if (strcmp(title, "Start") == 0) {
+                uiStartCb(filterButton);
+            } else {
+                uiStopCb(filterButton);
+            }
+        }
+    } else {
+        hotkeyPressed = FALSE;
+    }
+    
     for (ix = 0; ix < MODULE_CNT; ++ix) {
         if (modules[ix]->processTriggered) {
             IupSetAttribute(modules[ix]->iconHandle, "IMAGE", "doing_icon");
@@ -557,14 +698,24 @@ static void updatePing() {
             if (ReplyBuffer) {
                 IPAddr ipaddr = inet_addr("8.8.8.8");
                 if (ipaddr != INADDR_NONE) {
-                    DWORD dwRetVal = IcmpSendEcho(hIcmpFile, ipaddr, 
-                        SendData, sizeof(SendData), NULL, ReplyBuffer, ReplySize, 2000);
+                    // Set IP options for better accuracy
+                    IP_OPTION_INFORMATION IpOptions;
+                    IpOptions.Ttl = 64;
+                    IpOptions.Tos = 0;
+                    IpOptions.Flags = 0;
+                    IpOptions.OptionsSize = 0;
+                    IpOptions.OptionsData = NULL;
                     
-                    if (dwRetVal != 0 && dwRetVal != IP_REQ_TIMED_OUT) {
+                    DWORD dwRetVal = IcmpSendEcho(hIcmpFile, ipaddr, 
+                        SendData, sizeof(SendData), &IpOptions, ReplyBuffer, ReplySize, 3000);
+                    
+                    if (dwRetVal != 0) {
                         PICMP_ECHO_REPLY pEchoReply = (PICMP_ECHO_REPLY)ReplyBuffer;
                         if (pEchoReply->Status == IP_SUCCESS) {
                             char pingText[32];
-                            sprintf(pingText, "Ping: %ldms", pEchoReply->RoundTripTime);
+                            ULONG rtt = pEchoReply->RoundTripTime;
+                            if (rtt == 0) rtt = 1; // Show at least 1ms
+                            sprintf(pingText, "Ping: %lums", rtt);
                             IupStoreAttribute(pingLabel, "TITLE", pingText);
                         } else {
                             IupStoreAttribute(pingLabel, "TITLE", "Ping: --ms");
